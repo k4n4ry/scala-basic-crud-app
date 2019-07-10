@@ -1,0 +1,12 @@
+@(message:String, form:Form[PersonForm.Data])(implicit request: MessagesRequestHeader)
+
+@main("Add Person", "Add", "copyright 2018.") {
+<p>@message</p>
+@helper.form(action=routes.HomeController.create()) {
+@helper.CSRF.formField
+@helper.inputText(form("name"))
+@helper.inputText(form("mail"))
+@helper.inputText(form("tel"))
+<button>Create Person</button>
+}
+}
