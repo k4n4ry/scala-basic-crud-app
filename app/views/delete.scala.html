@@ -1,11 +1,13 @@
-@(message:String, form:PersonForm.Data, id:Int)(implicit request: MessagesRequestHeader)
+@(message:String, data:Person, id:Int)(implicit request: MessagesRequestHeader)
+
+
 @main("Delete Person", "DEL", "copyright 2018.") {
 <p>@message</p>
 <p>ID = @id</p>
 <ul>
-    <li>name: @form.name</li>
-    <li>mail: @form.mail</li>
-    <li>tel:  @form.tel</li>
+    <li>name: @data.name</li>
+    <li>mail: @data.mail</li>
+    <li>tel:  @data.tel</li>
 </ul>
 @helper.form(action=routes.HomeController.remove(id)) {
 @helper.CSRF.formField

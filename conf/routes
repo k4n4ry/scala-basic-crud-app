@@ -4,13 +4,16 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /                           controllers.HomeController.index
-GET     /add                           controllers.HomeController.add
-POST     /create                           controllers.HomeController.create
-GET     /edit/:id                           controllers.HomeController.edit(id:Int)
-POST     /update/:id                           controllers.HomeController.update(id:Int)
-GET     /delete/:id                           controllers.HomeController.delete(id:Int)
-POST     /remove/:id                           controllers.HomeController.remove(id:Int)
+GET     /                           controllers.HomeController.index()
+GET     /add                        controllers.HomeController.add()
+GET     /create                     controllers.HomeController.create()
+GET     /show/:id                   controllers.HomeController.show(id:Int)
+GET     /edit/:id                   controllers.HomeController.edit(id:Int)
+POST    /update/:id                 controllers.HomeController.update(id:Int)
+GET     /delete/:id                 controllers.HomeController.delete(id:Int)
+POST    /remove/:id                 controllers.HomeController.remove(id:Int)
+GET     /find                       controllers.HomeController.find()
+POST    /search                     controllers.HomeController.search()
 
 
 # Map static resources from the /public folder to the /assets URL path

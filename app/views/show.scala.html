@@ -1,0 +1,11 @@
+@(message:String, person:Person )
+
+@main("Show Person", "Show", "copyright 2018.") {
+<p>@message</p>
+<ul>
+    <li>ID: @person.id</li>
+    <li>NAME: @person.name</li>
+    <li>MAIL: @person.mail</li>
+    <li>TEL: @person.tel</li>
+</ul>
+}

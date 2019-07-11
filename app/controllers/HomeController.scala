@@ -1,148 +1,118 @@
 package controllers
 
 
-import java.sql._
 import javax.inject._
-import play.api._
-import play.api.mvc._
-import play.api.data._
+
+
+import models._
+import play.api.data.Form
 import play.api.data.Forms._
-import play.api.db._
-import PersonForm._
+import play.api.data.validation.Constraints._
+import play.api.i18n._
+import play.api.libs.json.Json
+import play.api.mvc._
+import scala.concurrent.{ExecutionContext, Future}
+
 
 @Singleton
-class HomeController @Inject()(db: Database, cc: MessagesControllerComponents)
+class HomeController @Inject()(repository: PersonRepository,
+                               cc: MessagesControllerComponents)(implicit ec: ExecutionContext)
   extends MessagesAbstractController(cc) {
 
-
-  def index() = Action {implicit request =>
-    var msg = "database record:<br><ul>"
-    try {
-      db.withConnection { conn =>
-        val stmt = conn.createStatement
-        val rs = stmt.executeQuery("SELECT * from people")
-        while (rs.next) {
-          msg += "<li>" + rs.getInt("id") + ":" + rs.getString("name") + "</li>"
-        }
-        msg += "</ul>"
-      }
-    } catch {
-      case e:SQLException =>
-        msg = "<li>no record...</li>"
+  def index() = Action.async {implicit request =>
+    repository.list().map { people =>
+      Ok(views.html.index(
+        "People Data.", people
+      ))
     }
-    Ok(views.html.index(
-      msg
-    ))
   }
 
   def add() = Action {implicit request =>
-    Ok(views.html.add("please your info",form))
-  }
-
-  def create() = Action {implicit reauest =>
-    val formdata = form.bindFromRequest
-    val data = formdata.get
-    try
-      db.withConnection { conn =>
-        val ps = conn.prepareStatement(
-          " insert into people values (default, ?, ?, ?)")
-        ps.setString(1, data.name)
-        ps.setString(2, data.mail)
-        ps.setString(3, data.tel)
-        ps.executeUpdate
-
-      }
-    catch {
-      case e: SQLException =>
-        Ok(views.html.add(
-          "form please", form
-        ))
-    }
-    Redirect(routes.HomeController.index)
-  }
-
-  def edit(id:Int) = Action {implicit request =>
-    var formdata = form.bindFromRequest
-    try {
-      db.withConnection { conn =>
-        val stmt = conn.createStatement
-        val rs = stmt.executeQuery("select * from people where id=" + id)
-        rs.next
-        val name = rs.getString("name")
-        val mail = rs.getString("mail")
-        val tel = rs.getString("tel")
-        val data = Data(name, mail, tel)
-        formdata = form.fill(data)
-      }
-    } catch {
-      case e:SQLException =>
-        Redirect(routes.HomeController.index)
-    }
-    Ok(views.html.edit(
-      "please edit form .",
-      formdata, id
-    ))
-  }
-
-  def update(id:Int) = Action { implicit request =>
-    val formdata = form.bindFromRequest
-    val data = formdata.get
-    try
-      db.withConnection { conn =>
-        val ps = conn.prepareStatement("update people set name=?, mail=?, tel=? where id=?")
-        ps.setString(1, data.name)
-        ps.setString(2, data.mail)
-        ps.setString(3, data.tel)
-        ps.setInt(4, id)
-        ps.executeUpdate
-      }
-    catch {
-      case e: SQLException =>
-        Ok(views.html.add(
-          "please edit form . ",
-          form
-        ))
-    }
-    Redirect(routes.HomeController.index)
-  }
-
-  def delete(id:Int) = Action {implicit request =>
-    var pdata:Data = null
-//    var formdata = form.bindFromRequest
-    try {
-      db.withConnection { conn =>
-        val stmt = conn.createStatement
-        val rs = stmt.executeQuery("select * from people where id=" + id)
-        rs.next
-        val name = rs.getString("name")
-        val mail = rs.getString("mail")
-        val tel = rs.getString("tel")
-        pdata = Data(name, mail, tel)
-
-      }
-    } catch {
-      case e:SQLException =>
-        Redirect(routes.HomeController.index)
-    }
-    Ok(views.html.delete(
-      "このレコードを削除します。",
-      pdata, id
+    Ok(views.html.add(
+      "フォームを記入して下さい。",
+      Person.personForm
     ))
   }
 
 
-  def remove(id:Int) = Action { implicit request =>
-    try
-      db.withConnection { conn =>
-        val ps = conn.prepareStatement("delete from people where id=?")
-        ps.setInt(1, id)
-        ps.executeUpdate
+  def create() = Action.async { implicit request =>
+    Person.personForm.bindFromRequest.fold(
+      errorForm => {
+        Future.successful(Ok(views.html.add("error.", errorForm)))
+      },
+      person => {
+        repository.create(person.name, person.mail, person.tel).map { _ =>
+          Redirect(routes.HomeController.index)
+        }
       }
-    catch {
-      case e: SQLException =>
-        Redirect(routes.HomeController.index)
+    )
+  }
+
+  def show(id:Int) = Action.async {implicit request =>
+    repository.get(id).map { person =>
+      Ok(views.html.show(
+        "People Data.", person
+      ))
     }
-    Redirect(routes.HomeController.index)
+  }
+
+  def edit(id:Int) = Action.async {implicit request =>
+    repository.get(id).map { person =>
+      val fdata:Form[PersonForm] = Person.personForm
+        .fill(PersonForm(person.name, person.mail, person.tel))
+      Ok(views.html.edit(
+        "Edit Person.", fdata, id
+      ))
+    }
+  }
+
+  def update(id:Int) = Action.async { implicit request =>
+    Person.personForm.bindFromRequest.fold(
+      errorForm => {
+        Future.successful(Ok(views.html.edit("error.", errorForm, id)))
+      },
+      person => {
+        repository.update(id, person.name, person.mail, person.tel).map { _ =>
+          Redirect(routes.HomeController.index)
+        }
+      }
+    )
+  }
+
+  def delete(id:Int) = Action.async {implicit request =>
+    repository.get(id).map { person =>
+      Ok(views.html.delete(
+        "Delete Person.", person, id
+      ))
+    }
+  }
+
+  def remove(id:Int) = Action.async {implicit request =>
+    repository.delete(id).map { _ =>
+      Redirect(routes.HomeController.index)
+    }
+  }
+
+  def find() = Action {implicit request =>
+    Ok(views.html.find(
+      "Find Data.", Person.personFind, Seq[Person]()
+    ))
+  }
+
+
+  def search() = Action.async {implicit request =>
+    Person.personFind.bindFromRequest.fold(
+      errorForm => {
+        Future.successful(Ok(views.html.find("error.", errorForm, Seq[Person]())))
+      },
+      find => {
+        repository.find(find.find).map { result =>
+          Ok(views.html.find(
+            "Find: " + find.find, Person.personFind, result
+          ))
+        }
+      }
+    )
   }
 
 

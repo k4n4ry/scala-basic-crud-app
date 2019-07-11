@@ -1,4 +1,5 @@
-@(message:String, form:Form[PersonForm.Data], id:Int)(implicit request: MessagesRequestHeader)
+@(message:String, form:Form[PersonForm], id:Int)(implicit request: MessagesRequestHeader)
+
 
 @main("Edit Person", "Edit", "copyright 2018.") {
 <p>@message</p>
@@ -7,6 +8,6 @@
 @helper.inputText(form("name"))
 @helper.inputText(form("mail"))
 @helper.inputText(form("tel"))
-<button>Create Person</button>
+<button>Update Person</button>
 }
 }
