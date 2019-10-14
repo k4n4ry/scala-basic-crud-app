@@ -1,2 +1,1 @@
-# scala-basic-crud-app
-# on play frame work .
+## scala-basic-crud-app on play frame work .
